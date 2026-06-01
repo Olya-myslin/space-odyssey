@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOVA-X Station</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-cyan: #4ecdc4;
+      --text-color: #e0e0e0;
+      --dark-bg: #050505;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      background: var(--dark-bg);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      color: var(--text-color);
+      overflow-x: hidden;
+    }
+
+    /* Звёздный фон */
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle var(--duration) ease-in-out infinite;
+      opacity: var(--opacity);
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: var(--opacity); }
+      50% { opacity: 1; }
+    }
+
+    /* Навигация */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 30px 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: linear-gradient(180deg, rgba(5,5,5,0.9) 0%, transparent 100%);
+    }
+
+    .nav-logo {
+      font-size: 1.2rem;
+      font-weight: 300;
+      letter-spacing: 4px;
+      color: white;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary-cyan);
+    }
+
+    /* Секции */
+    section {
+      min-height: 100vh;
+      position: relative;
+      display: flex;
+      z-index: 1;
+    }
+
+    /* Секция 1: Вступление */
+    .intro-section {
+      justify-content: center;
+      align-items: center;
+      padding: 0 10%;
+    }
+
+    .intro-content {
+      max-width: 900px;
+    }
+
+    .intro-number {
+      font-size: 1rem;
+      color: var(--primary-cyan);
+      letter-spacing: 6px;
+      margin-bottom: 30px;
+    }
+
+    .intro-title {
+      font-size: 5rem;
+      font-weight: 300;
+      color: white;
+      margin-bottom: 40px;
+      letter-spacing: 2px;
+    }
+
+    .intro-text {
+      font-size: 1.3rem;
+      line-height: 1.9;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 600px;
+      margin-bottom: 25px;
+      font-weight: 300;
+    }
+
+    /* Секции с моделями */
+    .model-section {
+      display: flex;
+      align-items: center;
+      padding: 0 10%;
+      opacity: 0.3;
+      transform: scale(0.95);
+      transition: all 0.8s ease-out;
+    }
+
+    .model-section.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .content-left {
+      flex: 1;
+      padding-right: 60px;
+    }
+
+    .content-right {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .section-number {
+      font-size: 1rem;
+      color: var(--primary-cyan);
+      letter-spacing: 6px;
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .section-title {
+      font-size: 3rem;
+      font-weight: 300;
+      color: white;
+      margin-bottom: 30px;
+      letter-spacing: 1px;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .section-description {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 40px;
+      font-weight: 300;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .model-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      height: 850px;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      --poster-color: transparent;
+    }
+
+    /* Минималистичные подписи */
+    .info-blocks {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .info-block {
+      display: flex;
+      gap: 20px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .section-number.visible,
+    .section-title.visible,
+    .section-description.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .info-block.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .info-line {
+      width: 1px;
+      background: var(--primary-cyan);
+      min-height: 60px;
+      flex-shrink: 0;
+    }
+
+    .info-content strong {
+      display: block;
+      color: white;
+      font-size: 1rem;
+      font-weight: 400;
+      margin-bottom: 5px;
+      letter-spacing: 1px;
+    }
+
+    .info-content span {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 300;
+    }
+
+    /* Мобильная оптимизация */
+    @media (max-width: 1024px) {
+      .model-section {
+        flex-direction: column;
+        padding: 100px 5%;
+      }
+
+      .content-left {
+        padding-right: 0;
+        margin-bottom: 40px;
+        text-align: center;
+      }
+
+      .intro-title {
+        font-size: 3rem;
+      }
+
+      .section-title {
+        font-size: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .intro-title {
+        font-size: 2.5rem;
+      }
+
+      .section-title {
+        font-size: 1.8rem;
+      }
+
+      .model-container {
+        height: 500px;
+        max-width: 100%;
+      }
+
+      .info-block {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .info-line {
+        width: 60px;
+        min-height: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Звёздный фон -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Навигация -->
+  <nav>
+    <div class="nav-logo">NOVA-X</div>
+    <ul class="nav-links">
+      <li><a href="#intro">Главная</a></li>
+      <li><a href="#ship">Корабль</a></li>
+      <li><a href="#female">Стелс-Ж</a></li>
+      <li><a href="#male">Титан-М</a></li>
+    </ul>
+  </nav>
+
+  <!-- Секция 1: Вступление -->
+  <section class="intro-section" id="intro">
+    <div class="intro-content">
+      <div class="intro-number">01 — СТАНЦИЯ</div>
+      <h1 class="intro-title">NOVA-X STATION</h1>
+      <p class="intro-text">
+        Передовой исследовательский пост человечества в глубинах космоса. 
+        Станция нового поколения с квантовыми системами жизнеобеспечения 
+        и искусственным интеллектом управления класса Аврора.
+      </p>
+      <p class="intro-text">
+        Команда пионеров изучает загадки вселенной, развивает межзвёздные 
+        технологии и готовит человечество к великой экспансии в неизведанное.
+      </p>
+    </div>
+  </section>
+
+  <!-- Секция 2: Корабль -->
+  <section class="model-section" id="ship">
+    <div class="content-left">
+      <div class="section-number">02 — КОРАБЛЬ</div>
+      <h2 class="section-title">Фантом</h2>
+      <p class="section-description">
+        Многоцелевой исследовательский корабль следующего поколения. 
+        Оснащён передовыми двигательными системами и герметичной кабиной 
+        с расширенными возможностями жизнеобеспечения.
+      </p>
+      <div class="info-blocks">
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Ионный двигатель</strong>
+            <span>Квантовый привод класса X9</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Пилотируемая кабина</strong>
+            <span>Герметичное пространство с ИИ</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Усиленный корпус</strong>
+            <span>Титан-керамический сплав</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="model-container">
+        <model-viewer
+          src="models/astronaut3.glb"
+          alt="Космический корабль"
+          auto-rotate
+          auto-rotate-delay="0"
+          camera-controls
+          disable-zoom
+          disable-pan
+          rotation-per-second="10deg"
+          shadow-intensity="2"
+          exposure="1.5"
+          camera-orbit="45deg 75deg 105%"
+          field-of-view="30deg"
+          min-camera-orbit="auto auto 75%"
+          max-camera-orbit="auto auto 200%"
+          interaction-prompt="none"
+          touch-action="pan-y"
+          interpolation-decay="200"
+          id="ship-viewer">
+        </model-viewer>
+      </div>
+    </div>
+  </section>
+
+  <!-- Секция 3: Женский астронавт -->
+  <section class="model-section" id="female">
+    <div class="content-left">
+      <div class="section-number">03 — КОСТЮМ</div>
+      <h2 class="section-title">Стелс-Ж</h2>
+      <p class="section-description">
+        Легкий манёвренный костюм для женского экипажа. Оптимизирован 
+        для длительных выходных в открытом космосе с расширенными 
+        системами поддержки жизнедеятельности.
+      </p>
+      <div class="info-blocks">
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Многодиапазонный шлем</strong>
+            <span>Визор с ИИ-помощником и AR-интерфейсом</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Рюкзак жизнеобеспечения</strong>
+            <span>Квантовый рекуперативный модуль</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Гравитационные сапоги</strong>
+            <span>Адаптивные стабилизаторы движения</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="model-container">
+        <model-viewer
+          src="models/astronaut.glb"
+          alt="Женский космический костюм"
+          auto-rotate
+          auto-rotate-delay="0"
+          camera-controls
+          disable-zoom
+          disable-pan
+          rotation-per-second="10deg"
+          shadow-intensity="1.5"
+          exposure="1.2"
+          camera-orbit="45deg 75deg 120%"
+          field-of-view="30deg"
+          min-camera-orbit="auto auto 100%"
+          max-camera-orbit="auto auto 200%"
+          interaction-prompt="none"
+          touch-action="pan-y"
+          interpolation-decay="200"
+          id="female-viewer">
+        </model-viewer>
+      </div>
+    </div>
+  </section>
+
+  <!-- Секция 4: Мужской астронавт -->
+  <section class="model-section" id="male">
+    <div class="content-left">
+      <div class="section-number">04 — КОСТЮМ</div>
+      <h2 class="section-title">Титан-М</h2>
+      <p class="section-description">
+        Тяжёлый боевой костюм для мужского экипажа. Предназначен 
+        для работы в экстремальных условиях с усиленной защитой 
+        и расширенным тактическим оснащением.
+      </p>
+      <div class="info-blocks">
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Боевой визор</strong>
+            <span>Многофункциональная система наведения</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Тактический модуль</strong>
+            <span>Рюкзак с расширенным запасом кислорода</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-line"></div>
+          <div class="info-content">
+            <strong>Штурмовые боты</strong>
+            <span>Усиленная конструкция для тяжелых условий</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="model-container">
+        <model-viewer
+          src="models/astronaut2.glb"
+          alt="Мужской космический костюм"
+          auto-rotate
+          auto-rotate-delay="0"
+          camera-controls
+          disable-zoom
+          disable-pan
+          rotation-per-second="10deg"
+          shadow-intensity="1.5"
+          exposure="1.2"
+          camera-orbit="45deg 75deg 120%"
+          field-of-view="30deg"
+          min-camera-orbit="auto auto 100%"
+          max-camera-orbit="auto auto 200%"
+          interaction-prompt="none"
+          touch-action="pan-y"
+          interpolation-decay="200"
+          id="male-viewer">
+        </model-viewer>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Создание фоновых звёзд
+    function createStars() {
+      const starsContainer = document.getElementById('stars');
+      const starCount = 150;
+
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = Math.random() * 2 + 1 + 'px';
+        star.style.height = star.style.width;
+        star.style.setProperty('--duration', Math.random() * 3 + 2 + 's');
+        star.style.setProperty('--opacity', Math.random() * 0.5 + 0.2);
+        starsContainer.appendChild(star);
+      }
+    }
+
+    // Скролл-анимация появления секций и инфо-блоков
+    function setupScrollAnimations() {
+      const sections = document.querySelectorAll('.model-section');
+      const observerOptions = {
+        threshold: 0.4,
+        rootMargin: '0px 0px -150px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+
+            // Показываем элементы секции с задержкой
+            const sectionNumber = entry.target.querySelector('.section-number');
+            const sectionTitle = entry.target.querySelector('.section-title');
+            const sectionDescription = entry.target.querySelector('.section-description');
+            
+            if (sectionNumber) {
+              setTimeout(() => sectionNumber.classList.add('visible'), 100);
+            }
+            if (sectionTitle) {
+              setTimeout(() => sectionTitle.classList.add('visible'), 200);
+            }
+            if (sectionDescription) {
+              setTimeout(() => sectionDescription.classList.add('visible'), 300);
+            }
+
+            // Показываем инфо-блоки с задержкой
+            const infoBlocks = entry.target.querySelectorAll('.info-block');
+            infoBlocks.forEach((block, index) => {
+              setTimeout(() => {
+                block.classList.add('visible');
+              }, index * 300 + 400);
+            });
+          }
+        });
+      }, observerOptions);
+
+      sections.forEach(section => {
+        observer.observe(section);
+      });
+    }
+
+    // Плавный скролл для навигации
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+      createStars();
+      setupScrollAnimations();
+    });
+  </script>
+</body>
+</html>
